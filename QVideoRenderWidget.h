@@ -35,7 +35,7 @@ protected:
     virtual void resizeGL(int w, int h);
     virtual void paintGL();
 private:
-    QOpenGLTexture* m_texture_2d_array[3] = {0,0,0};//yuvŒ∆¿Ì
+    QOpenGLTexture* m_texture_2d_array[3] = { nullptr,nullptr,nullptr };//yuvŒ∆¿Ì
     QOpenGLShaderProgram* m_shaderProgram = nullptr; //shader program
     // vao
 	QOpenGLVertexArrayObject* m_vao = nullptr;

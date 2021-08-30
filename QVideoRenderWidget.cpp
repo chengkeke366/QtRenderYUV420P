@@ -60,7 +60,20 @@ QVideoRenderWidget::QVideoRenderWidget(QWidget *parent)
 
 QVideoRenderWidget::~QVideoRenderWidget()
 {
+	// Make sure the context is current and then explicitly
+	 // destroy all underlying OpenGL resources.
+	makeCurrent();
+    m_vao->destroy();
+    m_vbo_yuv->destroy();
+    delete m_vbo_yuv;
+    delete m_vao;
     
+	for (int i = 0; i < 3; ++i) { // 这样删除就正常。
+		delete m_texture_2d_array[i];
+	}
+
+    delete m_shaderProgram;
+    doneCurrent();
 }
 
 void QVideoRenderWidget::setTextureI420PData(uint8_t* Buffer[3],int Stride[3], int width, int height)
