@@ -9,7 +9,7 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
     ui(new Ui::PlayerMainForm)
 {
     ui->setupUi(this);
-    ui->horizontalSlider->installEventFilter(this);
+  
 
 	QButtonGroup* btn_group = new QButtonGroup(this);
 	btn_group->addButton(ui->play);
@@ -23,10 +23,19 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 		qint64 new_position = (qint64)yuv_step * currentValue;
 		{
 			std::lock_guard<std::mutex> locker(m_seek_mutex);
-			m_yuv_file->seek(new_position);
+			if (m_yuv_file)
+			{
+				m_yuv_file->seek(new_position);
+			}
+		}
+
+		if (currentValue == ui->horizontalSlider->maximum()) {
+			ui->stop->setChecked(true);
+			ui->stop->toggled(true);
+			return;
 		}
 		qDebug() << "[PlayerMainForm::sliderReleased]";
-		if (!ui->pause->isChecked())
+		if (!ui->pause->isChecked() && !ui->stop->isChecked())
 		{
 			m_pause_thread = false;
 		}
@@ -41,6 +50,10 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 	//拖拽时，动态画面展示
 	connect(ui->horizontalSlider, &QSlider::sliderMoved, this, [=](int positon) {
 		ui->label->setText(QString("%1/%2").arg(positon).arg(ui->horizontalSlider->maximum()));
+		if (ui->horizontalSlider->sliderPosition() != positon)
+		{
+			ui->horizontalSlider->setSliderPosition(positon);
+		}
 	});
 
 	//拖拽时，动态画面展示
@@ -49,7 +62,7 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 		{
 			{
 				std::lock_guard<std::mutex> locker(m_seek_mutex);
-				if (m_yuv_file->atEnd()) {
+				if (m_yuv_file && m_yuv_file->atEnd()) {
 					qDebug() << "repaly file:" << m_yuv_file->fileName();
 					m_yuv_file->seek(0);
 				}
@@ -66,12 +79,14 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 	});
 
 	connect(ui->stop, &QPushButton::toggled, this, [=](bool checked) {
+		
 		if (checked)
 		{
 			m_pause_thread = true;
 			{
 				std::lock_guard<std::mutex> locker(m_seek_mutex);
-				m_yuv_file->seek(m_yuv_file->size());
+				if(m_yuv_file)
+					m_yuv_file->seek(m_yuv_file->size());
 			}
 			int maxStepNumber = ui->horizontalSlider->maximum();
 			ui->horizontalSlider->setValue(maxStepNumber);
@@ -110,6 +125,7 @@ PlayerMainForm::~PlayerMainForm()
 
 void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int width, int height)
 {
+	ui->play->setChecked(true);
 	m_yuv_width = width;
 	m_yuv_height = height;
 
@@ -128,8 +144,10 @@ void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int widt
 				while (!m_pause_thread)
 				{
 					if (m_yuv_file->atEnd()) {
+						m_pause_thread = true;
 						QMetaObject::invokeMethod(this, [this]() {
-							ui->stop->click();
+							ui->stop->setChecked(true);
+							ui->stop->toggled(true);
 						});
 						qDebug() << "[PlayerMainForm::startReadYuv420File] Thread m_yuv_file->atEnd()";
 						std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -170,35 +188,6 @@ void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int widt
 	}, filename);
 }
 
-bool PlayerMainForm::eventFilter(QObject* watched, QEvent* event)
-{  
-    if (event->type() == QEvent::MouseButtonPress && ui->horizontalSlider == watched)
-	{
-		QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-		if (mouseEvent->button() == Qt::LeftButton)	//判断左键
-		{
-			int dur = ui->horizontalSlider->maximum() - ui->horizontalSlider->minimum();
-			int pos = ui->horizontalSlider->minimum() + dur * ((double)mouseEvent->x() / ui->horizontalSlider->width());
-			if (pos != ui->horizontalSlider->sliderPosition())
-			{
-				qDebug() << "[PlayerMainForm::eventFilter]" << QEvent::MouseButtonPress;
-				ui->horizontalSlider->setValue(pos);
-				ui->horizontalSlider->setSliderDown(true);//强制发送 sliderPressed()事件，fix bug: QSlider点击时偶尔不能发出sliderPressed及 sliderReleased()
-			}
-		}
-	}
-	else if(event->type() == QEvent::MouseButtonRelease && ui->horizontalSlider == watched)
- 	{
-		QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-		if (mouseEvent->button() == Qt::LeftButton)	//判断左键
-		{
-			qDebug() << "[PlayerMainForm::eventFilter]" << QEvent::MouseButtonRelease;
-			ui->horizontalSlider->setSliderDown(false);//强制发送 sliderReleased();
-		}
-	}
-    return QObject::eventFilter(watched, event);
-}
-
 void PlayerMainForm::getCurrentPositionBackWardFrame()
 {
 
@@ -208,3 +197,4 @@ void PlayerMainForm::getCurrentPositionNextFrame()
 {
 
 }
+

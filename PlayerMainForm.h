@@ -17,14 +17,12 @@ public:
     explicit PlayerMainForm(QWidget *parent = nullptr);
     ~PlayerMainForm();
     void startReadYuv420FileThread(const QString &filename, int width, int height);
-protected:
-    bool eventFilter(QObject* watched, QEvent* event);
-
 private:
     //获取前一帧数据
     void getCurrentPositionBackWardFrame();
     //获取后一帧数据
     void getCurrentPositionNextFrame();
+
 private:
     Ui::PlayerMainForm *ui;
     std::thread *m_read_yuv_data_thread ;
