@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <thread>
+#include <mutex>
 
 namespace Ui {
 class PlayerMainForm;
@@ -20,12 +21,19 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event);
 
 private:
+    //获取前一帧数据
+    void getCurrentPositionBackWardFrame();
+    //获取后一帧数据
+    void getCurrentPositionNextFrame();
+private:
     Ui::PlayerMainForm *ui;
     std::thread *m_read_yuv_data_thread ;
-    bool m_bexit_thread = false;
-    bool m_pause_thread = false;
+    std::atomic_bool m_bexit_thread = false;
+    std::atomic_bool m_pause_thread = false;
     QFile* m_yuv_file = nullptr;
     int m_yuv_width=0, m_yuv_height=0;
+    std::mutex m_seek_mutex;
+    std::atomic_int m_speed_intelval = 1000/25;
 };
 
 #endif // PLAYERMAINFORM_H

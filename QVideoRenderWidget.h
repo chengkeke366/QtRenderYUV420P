@@ -30,6 +30,7 @@ public:
     ~QVideoRenderWidget();
     //对外接口，设置I420P数据
     void setTextureI420PData(uint8_t* Buffer[3], int Stride[3], int width, int height);
+    void clearTextureColor();
 protected:
     virtual void initializeGL();
     virtual void resizeGL(int w, int h);

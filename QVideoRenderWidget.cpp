@@ -135,11 +135,19 @@ void QVideoRenderWidget::setTextureI420PData(uint8_t* Buffer[3],int Stride[3], i
     update();
 }
 
+void QVideoRenderWidget::clearTextureColor()
+{
+    m_yTexture_data.reset();
+    m_uTexture_data.reset();
+    m_vTexture_data.reset();
+    update();
+}
+
 void QVideoRenderWidget::initializeGL()
 {
     initializeOpenGLFunctions();//Initializes OpenGL function resolution for the current context.
 
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);    //设置背景色为白色
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);    //设置背景色为黑色
 
     //makeCurrent();//使用当前窗口的上下文
     

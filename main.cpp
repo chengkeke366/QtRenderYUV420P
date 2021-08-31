@@ -8,6 +8,6 @@ int main(int argc, char *argv[])
 
     PlayerMainForm* w = new PlayerMainForm;
     w->show();
-    w->startReadYuv420FileThread("C:/Users/ChengKeKe/Desktop/player420.yuv",852,480);
+    w->startReadYuv420FileThread("C:/Users/ChengKeKe/Desktop/out852x480.yuv",852,480);
     return a.exec();
 }
