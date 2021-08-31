@@ -50,10 +50,7 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 	//拖拽时，动态画面展示
 	connect(ui->horizontalSlider, &QSlider::sliderMoved, this, [=](int positon) {
 		ui->label->setText(QString("%1/%2").arg(positon).arg(ui->horizontalSlider->maximum()));
-		if (ui->horizontalSlider->sliderPosition() != positon)
-		{
-			ui->horizontalSlider->setSliderPosition(positon);
-		}
+		getCurrentPositionBackWardFrame();
 	});
 
 	//拖拽时，动态画面展示
@@ -78,8 +75,7 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 		}
 	});
 
-	connect(ui->stop, &QPushButton::toggled, this, [=](bool checked) {
-		
+	connect(ui->stop, &QPushButton::toggled, this, [=](bool checked) {	
 		if (checked)
 		{
 			m_pause_thread = true;
@@ -94,8 +90,7 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 			ui->openGLWidget->clearTextureColor();
 		}
 	});
-	connect(ui->comboBox, static_cast<void (QComboBox::*)(const QString & text)>(&QComboBox::currentIndexChanged), this, [=](const QString& text) {
-		
+	connect(ui->comboBox, static_cast<void (QComboBox::*)(const QString & text)>(&QComboBox::currentIndexChanged), this, [=](const QString& text) {	
 		auto speed_grad = text.toFloat();//原子类型没有提供float，因此转换到int来使用
 		if (speed_grad < 0)
 		{
@@ -105,6 +100,18 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 		{
 			m_speed_intelval = m_speed_intelval / speed_grad;
 		}
+	});
+	
+	connect(ui->frontFrameBtn, &QPushButton::clicked, this, [=]() {
+		m_pause_thread = true;
+		ui->pause->setChecked(true);
+		getCurrentPositionBackWardFrame();
+	});
+
+	connect(ui->nextFrameBtn, &QPushButton::clicked, this, [=]() {
+		m_pause_thread = true;
+		ui->pause->setChecked(true);
+		getCurrentPositionNextFrame();
 	});
 }
 
@@ -179,7 +186,7 @@ void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int widt
 						int currentFrameNum = postion / yuv_step;
 						ui->horizontalSlider->setSliderPosition(currentFrameNum);
 						ui->label->setText(QString("%1/%2").arg(currentFrameNum).arg(maxsize));
-						});
+					});
 					std::this_thread::sleep_for(std::chrono::milliseconds(m_speed_intelval));//除100 还原原来的倍数
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -190,11 +197,53 @@ void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int widt
 
 void PlayerMainForm::getCurrentPositionBackWardFrame()
 {
-
+	int position = ui->horizontalSlider->sliderPosition();
+	int yuv_step = m_yuv_width * m_yuv_height * 3 / 2;
+	int file_seek_position = (position - 1)* yuv_step;
+	if (m_yuv_file)
+	{
+		m_yuv_file->seek(file_seek_position);
+		QByteArray data[3];
+		for (int i = 0; i < 3; i++)
+		{
+			if (i == 0) {
+				data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height);//附带seek操作
+			}
+			else {
+				data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height / 4);
+			}
+		}
+		int stride[3] = { m_yuv_width, m_yuv_width / 2, m_yuv_width / 2 };//填入stride
+		uint8_t* yuvArr[3] = { (uint8_t*)(data[0].data()), yuvArr[1] = (uint8_t*)(data[1].data()), yuvArr[2] = (uint8_t*)(data[2].data()) };
+		ui->openGLWidget->setTextureI420PData(yuvArr, stride, m_yuv_width, m_yuv_height);
+	}
+	ui->horizontalSlider->setSliderPosition(position - 1);
+	ui->label->setText(QString("%1/%2").arg(position - 1).arg(ui->horizontalSlider->maximum()));
 }
 
 void PlayerMainForm::getCurrentPositionNextFrame()
 {
-
+	int position = ui->horizontalSlider->sliderPosition();
+	int yuv_step = m_yuv_width * m_yuv_height * 3 / 2;
+	int file_seek_position = (position + 1) * yuv_step;
+	if (m_yuv_file)
+	{
+		m_yuv_file->seek(file_seek_position);
+		QByteArray data[3];
+		for (int i = 0; i < 3; i++)
+		{
+			if (i == 0) {
+				data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height);//附带seek操作
+			}
+			else {
+				data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height / 4);
+			}
+		}
+		int stride[3] = { m_yuv_width, m_yuv_width / 2, m_yuv_width / 2 };//填入stride
+		uint8_t* yuvArr[3] = { (uint8_t*)(data[0].data()), yuvArr[1] = (uint8_t*)(data[1].data()), yuvArr[2] = (uint8_t*)(data[2].data()) };
+		ui->openGLWidget->setTextureI420PData(yuvArr, stride, m_yuv_width, m_yuv_height);
+	}
+	ui->horizontalSlider->setSliderPosition(position + 1);
+	ui->label->setText(QString("%1/%2").arg(position + 1).arg(ui->horizontalSlider->maximum()));
 }
 
