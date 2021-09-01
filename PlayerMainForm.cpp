@@ -50,7 +50,7 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 	//拖拽时，动态画面展示
 	connect(ui->horizontalSlider, &QSlider::sliderMoved, this, [=](int positon) {
 		ui->label->setText(QString("%1/%2").arg(positon).arg(ui->horizontalSlider->maximum()));
-		getCurrentPositionBackWardFrame();
+		getCurrentPositionBackWardFrame(positon);
 	});
 
 	//拖拽时，动态画面展示
@@ -105,13 +105,17 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 	connect(ui->frontFrameBtn, &QPushButton::clicked, this, [=]() {
 		m_pause_thread = true;
 		ui->pause->setChecked(true);
-		getCurrentPositionBackWardFrame();
+		int position = ui->horizontalSlider->sliderPosition();
+		getCurrentPositionBackWardFrame(position);
+		ui->horizontalSlider->setSliderPosition(position - 1);
 	});
 
 	connect(ui->nextFrameBtn, &QPushButton::clicked, this, [=]() {
 		m_pause_thread = true;
 		ui->pause->setChecked(true);
-		getCurrentPositionNextFrame();
+		int position = ui->horizontalSlider->sliderPosition();
+		getCurrentPositionNextFrame(position);
+		ui->horizontalSlider->setSliderPosition(position + 1);
 	});
 }
 
@@ -195,55 +199,73 @@ void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int widt
 	}, filename);
 }
 
-void PlayerMainForm::getCurrentPositionBackWardFrame()
+void PlayerMainForm::getCurrentPositionBackWardFrame(int position)
 {
-	int position = ui->horizontalSlider->sliderPosition();
 	int yuv_step = m_yuv_width * m_yuv_height * 3 / 2;
 	int file_seek_position = (position - 1)* yuv_step;
 	if (m_yuv_file)
 	{
-		m_yuv_file->seek(file_seek_position);
-		QByteArray data[3];
-		for (int i = 0; i < 3; i++)
+		if (m_yuv_file->seek(file_seek_position))
 		{
-			if (i == 0) {
-				data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height);//附带seek操作
+			QByteArray data[3];
+			for (int i = 0; i < 3; i++)
+			{
+				if (i == 0) {
+					data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height);//附带seek操作
+				}
+				else {
+					data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height / 4);
+				}
 			}
-			else {
-				data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height / 4);
+			if (frameIsValid(data, m_yuv_width, m_yuv_height))
+			{
+				int stride[3] = { m_yuv_width, m_yuv_width / 2, m_yuv_width / 2 };//填入stride
+				uint8_t* yuvArr[3] = { (uint8_t*)(data[0].data()), yuvArr[1] = (uint8_t*)(data[1].data()), yuvArr[2] = (uint8_t*)(data[2].data()) };
+				ui->openGLWidget->setTextureI420PData(yuvArr, stride, m_yuv_width, m_yuv_height);
+				ui->label->setText(QString("%1/%2").arg(position - 1).arg(ui->horizontalSlider->maximum()));
 			}
+
+
 		}
-		int stride[3] = { m_yuv_width, m_yuv_width / 2, m_yuv_width / 2 };//填入stride
-		uint8_t* yuvArr[3] = { (uint8_t*)(data[0].data()), yuvArr[1] = (uint8_t*)(data[1].data()), yuvArr[2] = (uint8_t*)(data[2].data()) };
-		ui->openGLWidget->setTextureI420PData(yuvArr, stride, m_yuv_width, m_yuv_height);
 	}
-	ui->horizontalSlider->setSliderPosition(position - 1);
-	ui->label->setText(QString("%1/%2").arg(position - 1).arg(ui->horizontalSlider->maximum()));
+	
 }
 
-void PlayerMainForm::getCurrentPositionNextFrame()
+void PlayerMainForm::getCurrentPositionNextFrame(int position)
 {
-	int position = ui->horizontalSlider->sliderPosition();
 	int yuv_step = m_yuv_width * m_yuv_height * 3 / 2;
 	int file_seek_position = (position + 1) * yuv_step;
 	if (m_yuv_file)
 	{
-		m_yuv_file->seek(file_seek_position);
-		QByteArray data[3];
-		for (int i = 0; i < 3; i++)
+		if (m_yuv_file->seek(file_seek_position))
 		{
-			if (i == 0) {
-				data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height);//附带seek操作
+			QByteArray data[3];
+			for (int i = 0; i < 3; i++)
+			{
+				if (i == 0) {
+					data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height);//附带seek操作
+				}
+				else {
+					data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height / 4);
+				}
 			}
-			else {
-				data[i] = m_yuv_file->read(m_yuv_width * m_yuv_height / 4);
+			if (frameIsValid(data,m_yuv_width,m_yuv_height))
+			{
+				int stride[3] = { m_yuv_width, m_yuv_width / 2, m_yuv_width / 2 };//填入stride
+				uint8_t* yuvArr[3] = { (uint8_t*)(data[0].data()), yuvArr[1] = (uint8_t*)(data[1].data()), yuvArr[2] = (uint8_t*)(data[2].data()) };
+				ui->openGLWidget->setTextureI420PData(yuvArr, stride, m_yuv_width, m_yuv_height);
+				ui->label->setText(QString("%1/%2").arg(position + 1).arg(ui->horizontalSlider->maximum()));
 			}
 		}
-		int stride[3] = { m_yuv_width, m_yuv_width / 2, m_yuv_width / 2 };//填入stride
-		uint8_t* yuvArr[3] = { (uint8_t*)(data[0].data()), yuvArr[1] = (uint8_t*)(data[1].data()), yuvArr[2] = (uint8_t*)(data[2].data()) };
-		ui->openGLWidget->setTextureI420PData(yuvArr, stride, m_yuv_width, m_yuv_height);
 	}
-	ui->horizontalSlider->setSliderPosition(position + 1);
-	ui->label->setText(QString("%1/%2").arg(position + 1).arg(ui->horizontalSlider->maximum()));
+}
+
+bool PlayerMainForm::frameIsValid(QByteArray YuvData[3], int width, int height)
+{
+	if (YuvData[0].size() != width * height || YuvData[1].size() != width * height / 4 || YuvData[1].size() != width * height / 4)
+	{
+		return false;
+	}
+	return true;
 }
 
