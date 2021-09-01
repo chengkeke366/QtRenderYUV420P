@@ -1,9 +1,14 @@
-#include "PlayerMainForm.h"
-#include "ui_PlayerMainForm.h"
+
 #include <QMouseEvent>
 #include <QButtonGroup>
 #include <QComboBox>
+#include <QFileDialog>
 
+#include "PlayerMainForm.h"
+#include "YuvPlayerGlobal.h"
+#include "QtConfigParameterDig.h"
+#include "ui_PlayerMainForm.h"
+#include <tuple>
 PlayerMainForm::PlayerMainForm(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::PlayerMainForm)
@@ -15,7 +20,6 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 	btn_group->addButton(ui->play);
 	btn_group->addButton(ui->pause);
 	btn_group->addButton(ui->stop);
-
 
 	connect(ui->horizontalSlider, &QSlider::sliderReleased, this, [=]() {
 		int currentValue = ui->horizontalSlider->sliderPosition();
@@ -117,6 +121,10 @@ PlayerMainForm::PlayerMainForm(QWidget *parent) :
 		getCurrentPositionNextFrame(position);
 		ui->horizontalSlider->setSliderPosition(position + 1);
 	});
+
+	connect(ui->actionOpen, &QAction::triggered, this, [=]() {
+		openFile();
+	});
 }
 
 PlayerMainForm::~PlayerMainForm()
@@ -147,7 +155,7 @@ void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int widt
 		{ //read yuv
 			assert(m_yuv_height != 0 && m_yuv_width != 0);
 			int yuv_step = (uint64_t)m_yuv_height * m_yuv_width * 3 / 2;
-			qint64 maxsize = m_yuv_file->size()/ yuv_step;
+			qint64 maxsize = m_yuv_file->size() / yuv_step;
 			ui->horizontalSlider->setMinimum(0);
 			ui->horizontalSlider->setMaximum(maxsize);
 			while (!m_bexit_thread)
@@ -159,7 +167,7 @@ void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int widt
 						QMetaObject::invokeMethod(this, [this]() {
 							ui->stop->setChecked(true);
 							ui->stop->toggled(true);
-						});
+							});
 						qDebug() << "[PlayerMainForm::startReadYuv420File] Thread m_yuv_file->atEnd()";
 						std::this_thread::sleep_for(std::chrono::milliseconds(100));
 						continue;
@@ -190,13 +198,55 @@ void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int widt
 						int currentFrameNum = postion / yuv_step;
 						ui->horizontalSlider->setSliderPosition(currentFrameNum);
 						ui->label->setText(QString("%1/%2").arg(currentFrameNum).arg(maxsize));
-					});
+						});
 					std::this_thread::sleep_for(std::chrono::milliseconds(m_speed_intelval));//除100 还原原来的倍数
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 		}
 	}, filename);
+}
+
+void PlayerMainForm::exitReadYUVThread()
+{
+	m_pause_thread = true;
+	m_bexit_thread = true;
+	if (m_read_yuv_data_thread && m_read_yuv_data_thread->joinable())
+	{
+		m_read_yuv_data_thread->join();
+	}
+	if (m_yuv_file)
+	{
+		m_yuv_file->close();
+	}
+
+	ui->horizontalSlider->setSliderPosition(0);
+	ui->play->setChecked(true);
+	ui->play->toggled(true);
+	m_pause_thread = false;
+	m_bexit_thread = false;
+	
+}
+
+
+
+void PlayerMainForm::openFile()
+{
+	QString filename = QFileDialog::getOpenFileName(this, QObject::tr("Open image file"), "", "");
+	if (filename.isEmpty())
+	{
+		return;
+	}
+
+	exitReadYUVThread();
+
+	QtConfigParameterDig dlg;
+	dlg.previewFirstFrame(filename, IYUV_I420, 852,480,25);
+	if (dlg.exec() == QDialog::Accepted)
+	{
+		std::tuple<QString, int, int, int, int> params = dlg.getSelectParameters();
+		startReadYuv420FileThread(std::get<0>(params), std::get<1>(params), std::get<2>(params));
+	}
 }
 
 void PlayerMainForm::getCurrentPositionBackWardFrame(int position)
@@ -224,8 +274,6 @@ void PlayerMainForm::getCurrentPositionBackWardFrame(int position)
 				ui->openGLWidget->setTextureI420PData(yuvArr, stride, m_yuv_width, m_yuv_height);
 				ui->label->setText(QString("%1/%2").arg(position - 1).arg(ui->horizontalSlider->maximum()));
 			}
-
-
 		}
 	}
 	
@@ -262,7 +310,7 @@ void PlayerMainForm::getCurrentPositionNextFrame(int position)
 
 bool PlayerMainForm::frameIsValid(QByteArray YuvData[3], int width, int height)
 {
-	if (YuvData[0].size() != width * height || YuvData[1].size() != width * height / 4 || YuvData[1].size() != width * height / 4)
+	if (YuvData[0].size() != width * height || YuvData[1].size() != width * height / 4 || YuvData[2].size() != width * height / 4)
 	{
 		return false;
 	}

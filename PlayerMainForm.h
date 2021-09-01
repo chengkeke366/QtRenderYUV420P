@@ -12,7 +12,7 @@ class QFile;
 class PlayerMainForm : public QMainWindow
 {
     Q_OBJECT
-
+    
 public:
     explicit PlayerMainForm(QWidget *parent = nullptr);
     ~PlayerMainForm();
@@ -24,9 +24,13 @@ private:
     void getCurrentPositionNextFrame(int position);
 
     bool frameIsValid(QByteArray YuvData[3], int width, int height);
+
+    void exitReadYUVThread();
+public slots:
+    void openFile();
 private:
-    Ui::PlayerMainForm *ui;
-    std::thread *m_read_yuv_data_thread ;
+    Ui::PlayerMainForm *ui = nullptr;
+    std::thread *m_read_yuv_data_thread = nullptr;
     std::atomic_bool m_bexit_thread = false;
     std::atomic_bool m_pause_thread = false;
     QFile* m_yuv_file = nullptr;
