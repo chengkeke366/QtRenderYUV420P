@@ -61,7 +61,7 @@
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QLineEdit" name="lineEdit">
+        <widget class="QLineEdit" name="width_lineEdit">
          <property name="text">
           <string>852</string>
          </property>
@@ -75,7 +75,7 @@
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QLineEdit" name="lineEdit_2">
+        <widget class="QLineEdit" name="height_lineEdit">
          <property name="text">
           <string>480</string>
          </property>
@@ -91,7 +91,7 @@
        <item row="4" column="1">
         <widget class="QComboBox" name="fps_comboBox">
          <property name="currentText">
-          <string>60</string>
+          <string>25</string>
          </property>
          <item>
           <property name="text">

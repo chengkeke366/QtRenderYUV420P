@@ -8,8 +8,6 @@ class QtConfigParameterDig : public QDialog
 {
 	Q_OBJECT
 public:
-
-
 	QtConfigParameterDig(QWidget *parent = Q_NULLPTR);
 	~QtConfigParameterDig();
 	std::tuple<QString, int, int, int, int>  getSelectParameters();

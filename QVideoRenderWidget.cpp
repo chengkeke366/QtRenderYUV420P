@@ -67,10 +67,6 @@ QVideoRenderWidget::~QVideoRenderWidget()
     m_vbo_yuv->destroy();
     delete m_vbo_yuv;
     delete m_vao;
-    
-	for (int i = 0; i < 3; ++i) { // 这样删除就正常。
-		delete m_texture_2d_array[i];
-	}
 
     delete m_shaderProgram;
     doneCurrent();
@@ -78,27 +74,28 @@ QVideoRenderWidget::~QVideoRenderWidget()
 
 void QVideoRenderWidget::setTextureI420PData(uint8_t* Buffer[3],int Stride[3], int width, int height)
 {
-    std::call_once(m_b_initTxture, [=]() {
-        makeCurrent();//If you need to call the standard OpenGL API functions from other places (e.g. in your widget's constructor or in your own paint functions), you must call makeCurrent() first.
-        //创建yuv 纹理
-        for (int i = 0; i < 3; i++)
-        {
-            m_texture_2d_array[i] = new QOpenGLTexture(QOpenGLTexture::Target2D);
-            if (i == 0)
-            {
-                m_texture_2d_array[i]->setSize(width, height);
-            }
-            else
-            {
-                m_texture_2d_array[i]->setSize(width / 2, height / 2);
-            }
-            m_texture_2d_array[i]->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
-            m_texture_2d_array[i]->create();
-            m_texture_2d_array[i]->setFormat(QOpenGLTexture::R8_UNorm);
-            m_texture_2d_array[i]->allocateStorage();
-        }
-        doneCurrent();
-    });
+    if (m_width!=width || m_height!=height)
+    {
+		makeCurrent();//If you need to call the standard OpenGL API functions from other places (e.g. in your widget's constructor or in your own paint functions), you must call makeCurrent() first.
+//创建yuv 纹理
+		for (int i = 0; i < 3; i++)
+		{
+			m_texture_2d_array[i] = QSharedPointer<QOpenGLTexture>( new QOpenGLTexture(QOpenGLTexture::Target2D));
+			if (i == 0)
+			{
+				m_texture_2d_array[i]->setSize(width, height);
+			}
+			else
+			{
+				m_texture_2d_array[i]->setSize(width / 2, height / 2);
+			}
+			m_texture_2d_array[i]->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
+			m_texture_2d_array[i]->create();
+			m_texture_2d_array[i]->setFormat(QOpenGLTexture::R8_UNorm);
+			m_texture_2d_array[i]->allocateStorage();
+		}
+		doneCurrent();
+    }
 
     m_yTexture_data = std::shared_ptr<uint8_t[]>(new uint8_t[width * height], std::default_delete<uint8_t[]>());
     m_uTexture_data = std::shared_ptr<uint8_t[]>(new uint8_t[width * height/4], std::default_delete<uint8_t[]>());

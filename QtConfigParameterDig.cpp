@@ -5,6 +5,16 @@ QtConfigParameterDig::QtConfigParameterDig(QWidget *parent)
 	: QDialog(parent)
 {
 	ui.setupUi(this);
+	connect(ui.width_lineEdit, &QLineEdit::textChanged, [this]() {
+		previewFirstFrame(m_file_name, m_format, ui.width_lineEdit->text().toInt(), ui.height_lineEdit->text().toInt(), ui.fps_comboBox->currentText().toInt());
+	});
+	connect(ui.height_lineEdit, &QLineEdit::textChanged, [this]() {
+		previewFirstFrame(m_file_name, m_format, ui.width_lineEdit->text().toInt(), ui.height_lineEdit->text().toInt(), ui.fps_comboBox->currentText().toInt());
+	});
+
+	connect(ui.fps_comboBox, static_cast<void(QComboBox::*)(int index)>(&QComboBox::currentIndexChanged), [this]() {
+		m_fps = ui.fps_comboBox->currentText().toInt();
+	});
 }
 
 QtConfigParameterDig::~QtConfigParameterDig()
@@ -44,8 +54,9 @@ void QtConfigParameterDig::previewFirstFrame(const QString& filename, FrameForma
 		{
 			return;
 		}
-		int stride[3] = { width, width / 2, width / 2 };//ÌîÈëstride
+
 		uint8_t* yuvArr[3] = { (uint8_t*)(data[0].data()), yuvArr[1] = (uint8_t*)(data[1].data()), yuvArr[2] = (uint8_t*)(data[2].data()) };
+		int stride[3] = { width, width / 2, width / 2 };//ÌîÈëstride
 		ui.openGLWidget->setTextureI420PData(yuvArr, stride, width, height);
 	}
 }

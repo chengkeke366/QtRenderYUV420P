@@ -1,8 +1,8 @@
-
 #include <QMouseEvent>
 #include <QButtonGroup>
 #include <QComboBox>
 #include <QFileDialog>
+#include <QStandardPaths>
 
 #include "PlayerMainForm.h"
 #include "YuvPlayerGlobal.h"
@@ -145,6 +145,7 @@ PlayerMainForm::~PlayerMainForm()
 void PlayerMainForm::startReadYuv420FileThread(const QString& filename, int width, int height)
 {
 	ui->play->setChecked(true);
+
 	m_yuv_width = width;
 	m_yuv_height = height;
 
@@ -232,7 +233,8 @@ void PlayerMainForm::exitReadYUVThread()
 
 void PlayerMainForm::openFile()
 {
-	QString filename = QFileDialog::getOpenFileName(this, QObject::tr("Open image file"), "", "");
+	QString path = QStandardPaths::standardLocations(QStandardPaths::DesktopLocation)[0];
+	QString filename = QFileDialog::getOpenFileName(this, QObject::tr("Open image file"), path, "");
 	if (filename.isEmpty())
 	{
 		return;
@@ -241,6 +243,7 @@ void PlayerMainForm::openFile()
 	exitReadYUVThread();
 
 	QtConfigParameterDig dlg;
+	dlg.show();
 	dlg.previewFirstFrame(filename, IYUV_I420, 852,480,25);
 	if (dlg.exec() == QDialog::Accepted)
 	{

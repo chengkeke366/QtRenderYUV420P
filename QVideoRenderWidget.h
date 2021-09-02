@@ -36,7 +36,8 @@ protected:
     virtual void resizeGL(int w, int h);
     virtual void paintGL();
 private:
-    QOpenGLTexture* m_texture_2d_array[3] = { nullptr,nullptr,nullptr };//yuvŒ∆¿Ì
+    //QOpenGLTexture* m_texture_2d_array[3] = { nullptr,nullptr,nullptr };//yuvŒ∆¿Ì
+    QSharedPointer<QOpenGLTexture> m_texture_2d_array[3];
     QOpenGLShaderProgram* m_shaderProgram = nullptr; //shader program
     // vao
 	QOpenGLVertexArrayObject* m_vao = nullptr;
@@ -45,6 +46,8 @@ private:
     std::shared_ptr<uint8_t[]> m_yTexture_data;
     std::shared_ptr<uint8_t[]> m_uTexture_data;
     std::shared_ptr<uint8_t[]> m_vTexture_data;
-    std::once_flag m_b_initTxture ;
+
+    int m_width = 0;
+    int m_height = 0;
 };
 #endif // QVIDEORENDERWIDGET_H

@@ -123,7 +123,7 @@
         <item>
          <widget class="QComboBox" name="comboBox">
           <property name="currentText">
-           <string>0.5</string>
+           <string>1.0</string>
           </property>
           <item>
            <property name="text">
