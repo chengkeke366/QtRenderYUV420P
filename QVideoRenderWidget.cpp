@@ -155,7 +155,7 @@ void QVideoRenderWidget::initializeGL()
     m_shaderProgram->addShaderFromSourceCode(QOpenGLShader::Fragment, frag_shader);
 
     m_shaderProgram->link();
-	m_shaderProgram->bind();
+
     float vertices[] = {
         //顶点坐标                    纹理坐标
         -1.0f, -1.0f, 0.0f,           0.0f, 1.0f, //左下角
@@ -204,7 +204,7 @@ void QVideoRenderWidget::resizeGL(int w, int h)
 void QVideoRenderWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT);//渲染glClearColor设置的颜色
-    
+    m_shaderProgram->bind();
     m_vao->bind();
 	if (m_yTexture_data.use_count()!=0 && m_uTexture_data.use_count() != 0 && m_vTexture_data.use_count() != 0)
 	{
@@ -216,7 +216,7 @@ void QVideoRenderWidget::paintGL()
 		//设置YUV数据到纹理中
 
 		m_texture_2d_array[0]->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, m_yTexture_data.get());
-		m_texture_2d_array[0]->bind(0);
+		m_texture_2d_array[0]->bind(0);//激活纹理
 		m_texture_2d_array[1]->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, m_uTexture_data.get());
 		m_texture_2d_array[1]->bind(1);
 		m_texture_2d_array[2]->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, m_vTexture_data.get());
@@ -230,5 +230,6 @@ void QVideoRenderWidget::paintGL()
 	}
     
     m_vao->release();
+    m_shaderProgram->release();
 }
 
