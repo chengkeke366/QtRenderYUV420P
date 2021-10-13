@@ -18,14 +18,20 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     PlayerMainForm.cpp \
     main.cpp \
-    QVideoRenderWidget.cpp
+    QVideoRenderWidget.cpp\
+    QtConfigParameterDig.cpp\
+    Slider.cpp
+
 
 HEADERS += \
     PlayerMainForm.h \
-    QVideoRenderWidget.h
+    QVideoRenderWidget.h\
+    QtConfigParameterDig.h\
+    Slider.h
 
 FORMS += \
-    PlayerMainForm.ui
+    PlayerMainForm.ui\
+    QtConfigParameterDig.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
