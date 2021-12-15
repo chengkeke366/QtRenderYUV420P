@@ -31,12 +31,12 @@ public slots:
 private:
     Ui::PlayerMainForm *ui = nullptr;
     std::thread *m_read_yuv_data_thread = nullptr;
-    std::atomic_bool m_bexit_thread = false;
-    std::atomic_bool m_pause_thread = false;
+    std::atomic<bool> m_bexit_thread {false};
+    std::atomic<bool> m_pause_thread = {false};
     QFile* m_yuv_file = nullptr;
     int m_yuv_width=0, m_yuv_height=0;
     std::mutex m_seek_mutex;
-    std::atomic_int m_speed_intelval = 1000/25;
+    std::atomic_int m_speed_intelval { 1000/25};
 };
 
 #endif // PLAYERMAINFORM_H
